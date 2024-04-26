@@ -7,7 +7,7 @@ namespace OrderFoodAPIWebApp.Models
     {
         [Required(ErrorMessage = "Оберіть чи є страва в наявності!")]
         [Display(Name = "Чи страва в наявності")]
-        public bool IsDishAvilable { get; set; }
+        public bool IsDishAvailable { get; set; }
 
         [Display(Name = "Ресторан")]
         [Required(ErrorMessage = "Ресторан обов'язковий!")]
@@ -18,9 +18,9 @@ namespace OrderFoodAPIWebApp.Models
         public int DishId { get; set; }
 
         [Display(Name = "Ресторан")]
-        public virtual Restaurant Restaurant { get; set; } = null!;
+        public virtual Restaurant? Restaurant { get; set; }
 
         [Display(Name = "Страва")]
-        public virtual Dish Dish { get; set; } = null!;
+        public virtual Dish? Dish { get; set; } 
     }
 }

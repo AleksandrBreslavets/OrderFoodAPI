@@ -6,8 +6,8 @@ namespace OrderFoodAPIWebApp.Models
     {
         [Display(Name = "Кількість порцій страви")]
         [Required(ErrorMessage = "Кількість порцій страви обов'язкова!")]
-        [Range(0, int.MaxValue, ErrorMessage = "Значення повинно бути додатнім")]
-        [RegularExpression(@"^\d+$", ErrorMessage = "Кількість порцій страви повинна бути цілим додатнім числом")]
+        [Range(1, int.MaxValue, ErrorMessage = "Значення повинно бути додатнім")]
+        //[RegularExpression(@"^\d+$", ErrorMessage = "Кількість порцій страви повинна бути цілим додатнім числом")]
         public int DishQuantity { get; set; }
 
         [Display(Name = "Страва")]
@@ -19,9 +19,9 @@ namespace OrderFoodAPIWebApp.Models
         public int OrderId { get; set; }
 
         [Display(Name = "Замовлення")]
-        public virtual Order Order { get; set; } = null!;
+        public virtual Order? Order { get; set; }
 
         [Display(Name = "Страва")]
-        public virtual Dish Dish { get; set; } = null!;
+        public virtual Dish? Dish { get; set; }
     }
 }

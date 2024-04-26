@@ -20,25 +20,77 @@ namespace OrderFoodAPIWebApp.Controllers
             _context = context;
         }
 
+        private async Task MakeIncludes()
+        {
+            await _context.Categories
+                .Include(c => c.Dishes)
+                .ToListAsync();
+        }
+
+        private IEnumerable<object> FormResult(List<Category> categories)
+        {
+            var result = categories.Select(c => new
+            {
+                categoryId = c.Id,
+                name = c.Name,
+                dishes = c.Dishes.Select(d => new
+                {
+                    dishId=d.Id,
+                    name=d.Name,
+                    weight=d.Weight
+                })
+
+            }).ToList();
+
+            return result;
+        }
+
+        private object FormRespObject(string msg, int code)
+        {
+            object res = new
+            {
+                code = code,
+                message = msg
+            };
+
+            return res;
+        }
+
         // GET: api/Categories
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
         {
-            return await _context.Categories.ToListAsync();
+            await MakeIncludes();
+
+            var result = FormResult(await _context.Categories.ToListAsync());
+
+            return Ok(new
+            {
+                code = 200,
+                data = result
+            });
         }
 
         // GET: api/Categories/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Category>> GetCategory(int id)
         {
+            await MakeIncludes();
+
             var category = await _context.Categories.FindAsync(id);
 
             if (category == null)
             {
-                return NotFound();
+                return NotFound(FormRespObject("Немає категорії з таким ідентифікатором.", 404));
             }
 
-            return category;
+            var result = FormResult(new List<Category> { category });
+
+            return Ok(new
+            {
+                code = 200,
+                data = result.FirstOrDefault()
+            });
         }
 
         // PUT: api/Categories/5
@@ -48,7 +100,7 @@ namespace OrderFoodAPIWebApp.Controllers
         {
             if (id != category.Id)
             {
-                return BadRequest("Ідентифікатор категорії, переданий в URL, не співпадає з ідентифікатором категорії.");
+                return BadRequest(FormRespObject("Ідентифікатор категорії, переданий в URL, не співпадає з ідентифікатором категорії.", 400));
             }
 
             _context.Entry(category).State = EntityState.Modified;
@@ -61,7 +113,7 @@ namespace OrderFoodAPIWebApp.Controllers
             {
                 if (!CategoryExists(id))
                 {
-                    return NotFound("Немає категорії з таким ідентифікатором.");
+                    return NotFound(FormRespObject("Немає категорії з таким ідентифікатором.", 404));
                 }
                 else
                 {
@@ -69,7 +121,7 @@ namespace OrderFoodAPIWebApp.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok(FormRespObject("Успішно оновлено.", 200));
         }
 
         // POST: api/Categories
@@ -77,10 +129,21 @@ namespace OrderFoodAPIWebApp.Controllers
         [HttpPost]
         public async Task<ActionResult<Category>> PostCategory(Category category)
         {
+            if(_context.Categories.Any(c=>c.Name==category.Name))
+            {
+                return Conflict(FormRespObject("Категорія з такою назвою вже існує.", 409));
+            }
+
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetCategory", new { id = category.Id }, category);
+            var res = new
+            {
+                code = 201,
+                data = category
+            };
+
+            return CreatedAtAction("GetCategory", new { id = category.Id }, res);
         }
 
         // DELETE: api/Categories/5
@@ -90,7 +153,7 @@ namespace OrderFoodAPIWebApp.Controllers
             var category = await _context.Categories.FindAsync(id);
             if (category == null)
             {
-                return NotFound();
+                return NotFound(FormRespObject("Немає категорії з таким ідентифікатором.", 404));
             }
 
             _context.Categories.Remove(category);

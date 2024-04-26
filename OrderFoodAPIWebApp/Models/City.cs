@@ -7,7 +7,7 @@ namespace OrderFoodAPIWebApp.Models
     {
         public City()
         {
-            Restaurants = new List<Restaurant>();
+            Addresses = new List<Address>();
         }
 
         [Key]
@@ -19,7 +19,7 @@ namespace OrderFoodAPIWebApp.Models
         [Display(Name = "Місто")]
         public string Name { get; set; } = null!;
 
-        [Display(Name = "Ресторани")]
-        public virtual ICollection<Restaurant> Restaurants { get; set; } 
+        [Display(Name = "Адреси")]
+        public virtual ICollection<Address> Addresses { get; set; } 
     }
 }

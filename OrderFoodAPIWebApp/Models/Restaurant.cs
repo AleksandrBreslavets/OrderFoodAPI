@@ -19,29 +19,16 @@ namespace OrderFoodAPIWebApp.Models
         [Display(Name = "Ресторан")]
         public string Name { get; set; } = null!;
 
-        [Required(ErrorMessage = "Назва вулиці є обов'язковою!")]
-        [MaxLength(50, ErrorMessage = "Введіть коротшу назву вулиці")]
-        [Column(TypeName = "nvarchar(50)")]
-        [Display(Name = "Вулиця")]
-        public string StreetName { get; set; } = null!;
-
-        [Display(Name = "Номер будівлі")]
-        [Required(ErrorMessage = "Номер будівлі обов'язковий!")]
-        [Range(1, int.MaxValue, ErrorMessage = "Значення повинно бути більше 0")]
-        [RegularExpression(@"^\d+$", ErrorMessage = "Номер будівлі повинен бути цілим додатнім числом")]
-        public int BuldingNumber { get; set; }
-
-        [RegularExpression(@"^\d+(\.\d{1,2})?$", ErrorMessage = "Ціна повинна бути додатнім десятковим числом з максимально двома знаками після крапки")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Значення повинно бути більше 0")]
+        [Range(0.01, 5, ErrorMessage = "Значення повинно бути в межах від 0 до 5")]
         [Display(Name = "Рейтинг")]
         public double? Rating { get; set; }
 
-        [Display(Name = "Місто")]
-        public virtual City City { get; set; } = null!;
+        [Display(Name = "Адреса")]
+        public virtual Address? Address { get; set; }
 
-        [Display(Name = "Місто")]
-        [Required(ErrorMessage = "Місто обов'язкове!")]
-        public int CityId { get; set; }
+        [Display(Name = "Адреса")]
+        [Required(ErrorMessage = "Адреса обов'язкова!")]
+        public int AddressId { get; set; }
 
         [Display(Name = "Страви")]
         public virtual ICollection<DishRestaurant> DishRestaurants { get; set; }

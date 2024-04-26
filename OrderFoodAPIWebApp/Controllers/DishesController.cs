@@ -20,25 +20,86 @@ namespace OrderFoodAPIWebApp.Controllers
             _context = context;
         }
 
+        private async Task MakeIncludes()
+        {
+            await _context.Dishes
+                .Include(a => a.DishRestaurants)
+                    .ThenInclude(dr=>dr.Restaurant)
+                .Include(a=>a.DishOrders)
+                    .ThenInclude(dor=>dor.Order)
+                .Include(a=>a.Category)
+                .ToListAsync();
+        }
+
+        private IEnumerable<object> FormResult(List<Dish> dishes)
+        {
+            var result = dishes.Select(c => new
+            {
+                dishId = c.Id,
+                name = c.Name,
+                weight = c.Weight,
+                caloriesNumber=c.Calories,
+                description = c.Description,
+                price =c.Price,
+                category=c.Category!=null? c.Category.Name: null,
+                restaurants=c.DishRestaurants.Select(dr=> dr.Restaurant!= null? dr.Restaurant.Name:null),
+                orders = c.DishOrders.Select(dr => dr.Order != null ? new
+                {
+                    orderId = dr.Order.Id,
+                    creationTime=dr.Order.CreationTime,
+                    totalCost=dr.Order.TotalCost
+                } : null).ToArray()
+            }).ToList();
+
+            return result;
+        }
+
+        private object FormRespObject(string msg, int code)
+        {
+            object res = new
+            {
+                code = code,
+                message = msg
+            };
+
+            return res;
+        }
+
         // GET: api/Dishes
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Dish>>> GetDishes()
         {
-            return await _context.Dishes.ToListAsync();
+            await MakeIncludes();
+
+            var result = FormResult(await _context.Dishes.ToListAsync());
+
+            return Ok(new
+            {
+                code = 200,
+                data = result
+            });
         }
 
         // GET: api/Dishes/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Dish>> GetDish(int id)
         {
+            await MakeIncludes();
+
             var dish = await _context.Dishes.FindAsync(id);
 
             if (dish == null)
             {
-                return NotFound();
+                return NotFound(FormRespObject("Немає страви з такими ідентифікатором.", 404));
             }
 
-            return dish;
+            var result = FormResult(new List<Dish> { dish });
+
+            return Ok(new
+            {
+                code = 200,
+                data = result.FirstOrDefault()
+            });
         }
 
         // PUT: api/Dishes/5
@@ -48,7 +109,12 @@ namespace OrderFoodAPIWebApp.Controllers
         {
             if (id != dish.Id)
             {
-                return BadRequest();
+                return BadRequest(FormRespObject("Ідентифікатор страви, переданий в URL, не співпадає з ідентифікатором страви.", 400));
+            }
+
+            if (!CategoryExists(dish.CategoryId))
+            {
+                return NotFound(FormRespObject("Немає категорії з таким ідентифікатором.", 404));
             }
 
             _context.Entry(dish).State = EntityState.Modified;
@@ -61,7 +127,7 @@ namespace OrderFoodAPIWebApp.Controllers
             {
                 if (!DishExists(id))
                 {
-                    return NotFound();
+                    return NotFound(FormRespObject("Немає страви з таким ідентифікатором.", 404));
                 }
                 else
                 {
@@ -69,7 +135,7 @@ namespace OrderFoodAPIWebApp.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok(FormRespObject("Успішно оновлено.", 200));
         }
 
         // POST: api/Dishes
@@ -77,20 +143,31 @@ namespace OrderFoodAPIWebApp.Controllers
         [HttpPost]
         public async Task<ActionResult<Dish>> PostDish(Dish dish)
         {
-            var category = _context.Categories.FirstOrDefault(c=>c.Id==dish.CategoryId);
-            
-
-            if (category == null)
+            if (!CategoryExists(dish.CategoryId))
             {
-                return BadRequest();
+                return NotFound(FormRespObject("Немає категорії з таким ідентифікатором.", 404));
             }
-
-            dish.Category = category;
 
             _context.Dishes.Add(dish);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetDish", new { id = dish.Id }, dish);
+            var res = new
+            {
+                code = 201,
+                data = new
+                {
+                    dishId = dish.Id,
+                    name=dish.Name,
+                    weight=dish.Weight,
+                    description=dish.Description,
+                    price=dish.Price,
+                    categoryId=dish.CategoryId,
+                    dishRestaurants=dish.DishRestaurants,
+                    dishOrders=dish.DishOrders
+                }
+            };
+
+            return CreatedAtAction("GetDish", new { id = dish.Id }, res);
         }
 
         // DELETE: api/Dishes/5
@@ -100,7 +177,7 @@ namespace OrderFoodAPIWebApp.Controllers
             var dish = await _context.Dishes.FindAsync(id);
             if (dish == null)
             {
-                return NotFound();
+                return NotFound(FormRespObject("Немає страви з таким ідентифікатором.", 404));
             }
 
             _context.Dishes.Remove(dish);
@@ -109,9 +186,33 @@ namespace OrderFoodAPIWebApp.Controllers
             return NoContent();
         }
 
+        // GET: api/Dishes/popular
+        [HttpGet("popular")]
+        public async Task<ActionResult<IEnumerable<Dish>>> GetPopularDishes()
+        {
+            await MakeIncludes();
+
+            var result = FormResult(await _context.Dishes
+                .OrderByDescending(d => d.DishOrders.Count)
+                .ThenByDescending(d=>d.Price)
+                .Take(3) 
+                .ToListAsync());
+
+            return Ok(new
+            {
+                code = 200,
+                data = result
+            });
+        }
+
         private bool DishExists(int id)
         {
             return _context.Dishes.Any(e => e.Id == id);
+        }
+
+        private bool CategoryExists(int id)
+        {
+            return _context.Categories.Any(e => e.Id == id);
         }
     }
 }

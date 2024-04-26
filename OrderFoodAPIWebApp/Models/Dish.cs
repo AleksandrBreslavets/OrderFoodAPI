@@ -36,7 +36,7 @@ namespace OrderFoodAPIWebApp.Models
         [Display(Name = "Кількість калорій")]
         [Required(ErrorMessage = "Кількість калорій обов'язкова!")]
         [Range(1, int.MaxValue, ErrorMessage = "Значення повинно бути більше 0")]
-        [RegularExpression(@"^\d+$", ErrorMessage = "Кількість калорій повинна бути цілим додатнім числом")]
+        //[RegularExpression(@"^\d+$", ErrorMessage = "Кількість калорій повинна бути цілим додатнім числом")]
         public int Calories { get; set; }
 
         [Display(Name = "Категорія")]
@@ -44,7 +44,7 @@ namespace OrderFoodAPIWebApp.Models
         public int CategoryId { get; set; }
 
         [Display(Name = "Категорія")]
-        public virtual Category Category { get; set; } = null!;
+        public virtual Category? Category { get; set; }
 
         [Display(Name = "Ресторани з цією старвою")]
         public virtual ICollection<DishRestaurant> DishRestaurants { get; set; }

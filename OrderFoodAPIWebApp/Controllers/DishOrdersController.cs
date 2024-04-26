@@ -20,35 +20,105 @@ namespace OrderFoodAPIWebApp.Controllers
             _context = context;
         }
 
+        private async Task MakeIncludes()
+        {
+            await _context.DishOrders
+                .Include(od=>od.Order)
+                    .ThenInclude(r => r.Address)
+                    .ThenInclude(a=>a.City)
+                .Include(dr => dr.Order)
+                    .ThenInclude(r => r.Customer)
+                .Include(dr => dr.Dish)
+                    .ThenInclude(d => d.Category)
+                .ToListAsync();
+        }
+
+        private IEnumerable<object> FormResult(List<DishOrder> dishOrder)
+        {
+            var result = dishOrder.Select(dr => new
+            {
+                dishQuantity=dr.DishQuantity,
+                order = dr.Order != null ? new
+                {
+                    orderId=dr.OrderId,
+                    creationTime=dr.Order.CreationTime,
+                    isReady=dr.Order.IsReady,
+                    customer = dr.Order.Customer != null ? dr.Order.Customer.CustomerName : null,
+                    deliveryAddress = dr.Order.Address != null ? $"{dr.Order.Address.StreetName} {dr.Order.Address.BuldingNumber}" : null,
+                    deliveryCity= dr.Order.Address.City != null ? dr.Order.Address.City.Name : null,
+                } : null,
+                dish = dr.Dish != null ? new
+                {
+                    dishId = dr.DishId,
+                    name = dr.Dish.Name,
+                    category = dr.Dish.Category != null ? dr.Dish.Category.Name : null,
+                } : null
+            }).ToList();
+
+            return result;
+        }
+
+        private object FormRespObject(string msg, int code)
+        {
+            object res = new
+            {
+                code = code,
+                message = msg
+            };
+
+            return res;
+        }
+
         // GET: api/DishOrders
         [HttpGet]
         public async Task<ActionResult<IEnumerable<DishOrder>>> GetDishOrders()
         {
-            return await _context.DishOrders.ToListAsync();
+            await MakeIncludes();
+
+            var result = FormResult(await _context.DishOrders.ToListAsync());
+
+            return Ok(new
+            {
+                code = 200,
+                data = result
+            });
         }
 
         // GET: api/DishOrders/5/7
-        [HttpGet("{dishId}/{orderId}")]
-        public async Task<ActionResult<DishOrder>> GetDishOrder(int dishId, int orderId)
+        [HttpGet("{orderId}/{dishId}")]
+        public async Task<ActionResult<DishOrder>> GetDishOrder(int orderId, int dishId)
         {
+            await MakeIncludes();
+
             var dishOrder = await _context.DishOrders.FirstOrDefaultAsync(dr => dr.DishId == dishId && dr.OrderId == orderId);
 
             if (dishOrder == null)
             {
-                return NotFound();
+                return NotFound(FormRespObject("Немає кортежу з такими ідентифікаторами.", 404));
             }
 
-            return dishOrder;
+            var result = FormResult(new List<DishOrder> { dishOrder });
+
+            return Ok(new
+            {
+                code = 200,
+                data = result.FirstOrDefault()
+            });
         }
 
         // PUT: api/DishOrders/5/7
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{dishId}/{orderId}")]
-        public async Task<IActionResult> PutDishOrder(int dishId, int orderId, DishOrder dishOrder)
+        [HttpPut("{orderId}/{dishId}")]
+        public async Task<IActionResult> PutDishOrder(int orderId, int dishId, DishOrder dishOrder)
         {
             if (orderId != dishOrder.OrderId || dishId!=dishOrder.DishId)
             {
-                return BadRequest("Ідентифікатор замовлення або страви, переданий в URL, не співпадає з ідентифікатором замовлення або страви.");
+                return BadRequest(FormRespObject("Ідентифікатор замовлення або страви, переданий в URL, не співпадає з ідентифікатором замовлення або страви.", 400));
+            }
+
+            if (!DishExists(dishOrder.DishId) || !OrderExists(dishOrder.OrderId))
+            {
+                return NotFound(FormRespObject("Немає страви або замовлення з такими ідентифікаторами.", 404));
             }
 
             _context.Entry(dishOrder).State = EntityState.Modified;
@@ -59,9 +129,9 @@ namespace OrderFoodAPIWebApp.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!DishOrderExists(dishId, orderId))
+                if (!DishOrderExists(orderId, dishId))
                 {
-                    return NotFound("Немає кортежу з такими ідентифікатороми.");
+                    return NotFound(FormRespObject("Немає кортежу з такими ідентифікаторами.", 404));
                 }
                 else
                 {
@@ -69,7 +139,7 @@ namespace OrderFoodAPIWebApp.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok(FormRespObject("Успішно оновлено.", 200));
         }
 
         // POST: api/DishOrders
@@ -77,6 +147,11 @@ namespace OrderFoodAPIWebApp.Controllers
         [HttpPost]
         public async Task<ActionResult<DishOrder>> PostDishOrder(DishOrder dishOrder)
         {
+            if (!DishExists(dishOrder.DishId) || !OrderExists(dishOrder.OrderId))
+            {
+                return NotFound(FormRespObject("Немає страви або замовлення з такими ідентифікаторами.", 404));
+            }
+
             _context.DishOrders.Add(dishOrder);
             try
             {
@@ -84,9 +159,9 @@ namespace OrderFoodAPIWebApp.Controllers
             }
             catch (DbUpdateException)
             {
-                if (DishOrderExists(dishOrder.DishId, dishOrder.OrderId))
+                if (DishOrderExists(dishOrder.OrderId, dishOrder.DishId))
                 {
-                    return Conflict();
+                    return Conflict(FormRespObject("Вже існує кортеж з такими ідентифікаторами замовлення та страви.", 409));
                 }
                 else
                 {
@@ -94,17 +169,28 @@ namespace OrderFoodAPIWebApp.Controllers
                 }
             }
 
-            return CreatedAtAction("GetDishOrder", new { id = dishOrder.OrderId }, dishOrder);
+            var res = new
+            {
+                code = 201,
+                data = new
+                {
+                    dishId = dishOrder.DishId,
+                    orderId = dishOrder.OrderId,
+                    dishQuantity= dishOrder.DishQuantity
+                }
+            };
+
+            return CreatedAtAction("GetDishOrder", new { orderId = dishOrder.OrderId, dishId=dishOrder.DishId }, res);
         }
 
         // DELETE: api/DishOrders/5
-        [HttpDelete("{dishId}/{orderId}")]
-        public async Task<IActionResult> DeleteDishOrder(int dishId, int orderId)
+        [HttpDelete("{orderId}/{dishId}")]
+        public async Task<IActionResult> DeleteDishOrder(int orderId, int dishId)
         {
             var dishOrder = await _context.DishOrders.FirstOrDefaultAsync(dr => dr.DishId == dishId && dr.OrderId==orderId);
             if (dishOrder == null)
             {
-                return NotFound();
+                return NotFound(FormRespObject("Немає кортежу з таким ідентифікаторами.", 404));
             }
 
             _context.DishOrders.Remove(dishOrder);
@@ -113,9 +199,19 @@ namespace OrderFoodAPIWebApp.Controllers
             return NoContent();
         }
 
-        private bool DishOrderExists(int dishId, int orderId)
+        private bool DishOrderExists(int orderId, int dishId)
         {
             return _context.DishOrders.Any(e => e.OrderId == orderId && e.DishId==dishId);
+        }
+
+        private bool OrderExists(int orderId)
+        {
+            return _context.Orders.Any(e => e.Id == orderId);
+        }
+
+        private bool DishExists(int dishId)
+        {
+            return _context.Dishes.Any(e => e.Id == dishId);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OrderFoodAPIWebApp.Models;
 
 namespace OrderFoodAPIWebApp.Models
 {
@@ -19,6 +20,8 @@ namespace OrderFoodAPIWebApp.Models
         public virtual DbSet<Order> Orders { get; set; }
 
         public virtual DbSet<Restaurant> Restaurants { get; set; }
+
+        public virtual DbSet<Address> Addresses { get; set; }
 
         public FoodOrderAPIContext(DbContextOptions<FoodOrderAPIContext> options)
         : base(options) 
@@ -62,10 +65,15 @@ namespace OrderFoodAPIWebApp.Models
                 .WithMany(c => c.Dishes)
                 .HasForeignKey(d => d.CategoryId);
 
-            modelBuilder.Entity<Restaurant>()
+            modelBuilder.Entity<Address>()
                 .HasOne(r => r.City)
-                .WithMany(c => c.Restaurants)
+                .WithMany(c => c.Addresses)
                 .HasForeignKey(r => r.CityId);
+
+            modelBuilder.Entity<Restaurant>()
+                .HasOne(r => r.Address)
+                .WithMany(c => c.Restaurants)
+                .HasForeignKey(r => r.AddressId);
 
             modelBuilder.Entity<Order>(entity =>
             {
@@ -75,9 +83,15 @@ namespace OrderFoodAPIWebApp.Models
                     .HasOne(o => o.Customer)
                     .WithMany(c => c.Orders)
                     .HasForeignKey(d => d.CustomerId);
+
+                entity
+                    .HasOne(o => o.Address)
+                    .WithMany(c => c.Orders)
+                    .HasForeignKey(d => d.AddressId);
             });
                 
         }
+        public DbSet<OrderFoodAPIWebApp.Models.Address> Address { get; set; } = default!;
 
     }
 }
