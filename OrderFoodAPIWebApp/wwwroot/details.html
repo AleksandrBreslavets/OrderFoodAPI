@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Деталі про страву</title>
+    <style>
+        span{
+            font-weight:100;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="name"></h1>
+    <h4>Вага: <span id="weight"></span></h4>
+    <h4>Опис: <span id="descr"></span></h4>
+    <h4>Вартість: <span id="price"></span></h4>
+    <h4>Калорійність: <span id="calories"></span></h4>
+    <h4>Категорія: <span id="category"></span></h4>
+    <h4>Ресторани, в яких є страва: <span id="restaurants"></span></h4>
+
+    <a style="margin-top:90px;" href="index.html">На головну</a>
+    <script src="js/details.js" asp-append-version="true"></script>
+    <script>
+        getDishById();
+    </script>
+</body>
+
+</html>

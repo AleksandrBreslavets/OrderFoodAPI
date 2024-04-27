@@ -42,6 +42,7 @@ namespace OrderFoodAPIWebApp.Controllers
                 description = c.Description,
                 price =c.Price,
                 category=c.Category!=null? c.Category.Name: null,
+                categoryId=c.CategoryId,
                 restaurants=c.DishRestaurants.Select(dr=> dr.Restaurant!= null? dr.Restaurant.Name:null),
                 orders = c.DishOrders.Select(dr => dr.Order != null ? new
                 {

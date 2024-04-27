@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Лабараторна 2</title>
+    <link rel="stylesheet" href="css/site.css" />
+    <style>
+        .t_dishes {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top:40px;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h3>Додавання страви</h3>
+    <form action="javascript:void(0);" method="POST" onsubmit="addDish()">
+        <input maxlength="50" type="text" id="add-name" placeholder="Назва страви" required>
+        <input type="text" id="add-desctiption" placeholder="Опис страви">
+        <input type="number" id="add-weight" placeholder="Вага страви" required step="any">
+        <input type="number" id="add-price" placeholder="Ціна страви" required step="any">
+        <input type="number" id="add-calories" placeholder="Калорійність страви" required>
+        <select id="add-category" ></select>
+        <input type="submit" value="Додати">
+    </form>
+
+    <div id="editForm" style="display:none;">
+        <h3>Edit</h3>
+        <form action="javascript:void(0);" onsubmit="updateDish()">
+            <input maxlength="50" type="hidden" id="edit-id">
+            <input type="text" id="edit-name">
+            <input type="text" id="edit-desctiption">
+            <input type="number" step="any" id="edit-weight">
+            <input type="number" step="any" id="edit-price">
+            <input type="number" id="edit-calories">
+            <select id="edit-category"></select>
+            <input type="submit" value="Save">
+            <a onclick="closeInput()" style="cursor:pointer;" aria-label="Close">&#10006;</a>
+        </form>
+    </div>
+
+    <p id="counter"></p>
+
+    <table class="t_dishes">
+        <thead>
+            <tr>
+                <th>Назва</th>
+                <th>Опис</th>
+                <th>Вага (грам)</th>
+                <th>Ціна (грн)</th>
+                <th>Калорійність (на 100 гр страви)</th>
+                <th>Категорія</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="dishes"></tbody>
+    </table>
+
+    <script src="js/lab2.js" asp-append-version="true"></script>
+    <script type="text/javascript">
+        getDishes();
+        getCategories();
+    </script>
+</body>
+</html>
