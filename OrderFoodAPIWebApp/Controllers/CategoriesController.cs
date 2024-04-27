@@ -131,7 +131,7 @@ namespace OrderFoodAPIWebApp.Controllers
         {
             if(_context.Categories.Any(c=>c.Name==category.Name))
             {
-                return Conflict(FormRespObject("Категорія з такою назвою вже існує.", 409));
+               return Conflict(FormRespObject("Категорія з такою назвою вже існує.", 409));
             }
 
             _context.Categories.Add(category);
@@ -157,6 +157,7 @@ namespace OrderFoodAPIWebApp.Controllers
             }
 
             _context.Categories.Remove(category);
+
             await _context.SaveChangesAsync();
 
             return NoContent();

@@ -23,6 +23,8 @@ namespace OrderFoodAPIWebApp.Models
 
         public virtual DbSet<Address> Addresses { get; set; }
 
+        public FoodOrderAPIContext() { }
+
         public FoodOrderAPIContext(DbContextOptions<FoodOrderAPIContext> options)
         : base(options) 
         {
